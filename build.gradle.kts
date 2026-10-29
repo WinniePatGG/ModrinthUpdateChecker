@@ -1,14 +1,21 @@
 import org.gradle.api.credentials.PasswordCredentials
 import org.gradle.authentication.http.BasicAuthentication
 import org.gradle.api.publish.maven.tasks.PublishToMavenRepository
+import java.util.Base64
 
 plugins {
     id("java")
     id("maven-publish")
+    id("signing")
 }
 
 group = "de.winniepat"
 version = "0.0.1"
+
+java {
+    withSourcesJar()
+    withJavadocJar()
+}
 
 repositories {
     mavenCentral()
@@ -35,7 +42,7 @@ publishing {
             pom {
                 name.set("ModrinthUpdateChecker")
                 description.set(
-                    "A small, dependency-free HTTP client for Java 21 built on the JDK's HttpClient."
+                    "A lightweight Modrinth update checker for Java 21."
                 )
                 url.set("https://github.com/WinniePatGG/ModrinthUpdateChecker")
                 inceptionYear.set("2026")
@@ -109,4 +116,23 @@ tasks.withType<PublishToMavenRepository>().configureEach {
             )
         }
     }
+}
+
+signing {
+    val encodedKey = providers.gradleProperty("signingKey")
+    val signingPassword = providers.gradleProperty("signingPassword")
+
+    if (encodedKey.isPresent) {
+        val decodedKey = String(
+            Base64.getDecoder().decode(encodedKey.get()),
+            Charsets.UTF_8
+        )
+
+        useInMemoryPgpKeys(
+            decodedKey,
+            signingPassword.orNull
+        )
+    }
+
+    sign(publishing.publications["mavenJava"])
 }
