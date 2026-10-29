@@ -7,7 +7,7 @@ A simple update checker for Minecraft plugins/mods using the Modrinth API.
 ```gradle
 repositories {
     maven { url "https://maven.winniepat.de/releases" } // if you want to use my repository
-    maven { url "https://maven.pkg.github.com/WinniePatGG/ModrinthUpdateChecker" } // if you want to use GitHub Packages
+    mavenCentral() // if you want to use mavenCentral
 }
 ```
 
