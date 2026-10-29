@@ -1,5 +1,7 @@
 .gradle
 .idea
 build
-.gradle/gradle.properties
-UPDATE.md
+
+# Local credentials (publishing tokens, signing keys) live in
+# gradle.properties; per UPDATE.md they must never be committed.
+gradle.properties

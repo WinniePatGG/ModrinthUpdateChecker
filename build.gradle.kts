@@ -13,6 +13,9 @@ group = "de.winniepat"
 version = "0.0.1"
 
 java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
     withSourcesJar()
     withJavadocJar()
 }
@@ -30,6 +33,14 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+}
+
+tasks.processResources {
+    val versionProps = mapOf("version" to project.version.toString())
+    inputs.properties(versionProps)
+    filesMatching("version.properties") {
+        expand(versionProps)
+    }
 }
 
 publishing {
@@ -118,6 +129,23 @@ tasks.withType<PublishToMavenRepository>().configureEach {
     }
 }
 
+// The Central Portal aggregation task is created by the NMCP settings plugin
+// and is not a PublishToMavenRepository, so give it the same fail-early guard
+// instead of surfacing a cryptic authentication error after other
+// repositories were already published.
+tasks.matching { it.name == "nmcpPublishAggregationToCentralPortal" }.configureEach {
+    doFirst {
+        val missing = listOf("mavenCentralUsername", "mavenCentralPassword")
+            .filterNot { providers.gradleProperty(it).isPresent }
+        if (missing.isNotEmpty()) {
+            throw GradleException(
+                "Cannot publish to the Central Portal: missing Gradle properties ${missing.joinToString()}. " +
+                        "Add them to gradle.properties (gitignored) or pass -P<key>=<value>."
+            )
+        }
+    }
+}
+
 signing {
     val encodedKey = providers.gradleProperty("signingKey")
     val signingPassword = providers.gradleProperty("signingPassword")
@@ -135,4 +163,14 @@ signing {
     }
 
     sign(publishing.publications["mavenJava"])
+}
+
+tasks.register("publishAll") {
+    group = "publishing"
+
+    dependsOn(
+        "publishMavenJavaPublicationToReposiliteRepository",
+        "publishMavenJavaPublicationToGitHubPackagesRepository",
+        "nmcpPublishAggregationToCentralPortal"
+    )
 }
